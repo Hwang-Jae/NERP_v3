@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Next Generation Web ERP v3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', 'Malgun Gothic', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+
+    <header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-white shadow-md">
+                <i class="fas fa-industry text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-wider text-blue-400">NEXTGEN ERP <span class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded ml-2">v3.0 Core</span></h1>
+                <p class="text-xs text-gray-400">생산 실적 및 자재 수불 실시간 모니터링 시스템</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="flex items-center text-xs text-green-400 bg-green-950/50 px-3 py-1.5 rounded-full border border-green-800">
+                <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                MS SQL LocalDB Connected
+            </span>
+            <a href="/docs" target="_blank" class="text-sm bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-md transition flex items-center">
+                <i class="fas fa-code-branch mr-2"></i> Swagger API
+            </a>
+        </div>
+    </header>
+
+    <div class="flex flex-1 flex-col lg:flex-row overflow-hidden">
+        
+        <aside class="w-full lg:w-96 bg-gray-800 border-r border-gray-700 p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-80px)]">
+            
+            <div class="bg-gray-850 p-4 rounded-xl border border-gray-700 shadow-sm">
+                <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center">
+                    <i class="fas fa-box-open text-blue-500 mr-2"></i> 품목 마스터 등록
+                </h2>
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <label class="block text-gray-400 mb-1">품목 코드</label>
+                        <input type="text" id="item_cd" placeholder="예: ITEM_001" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">품목명</label>
+                        <input type="text" id="item_nm" placeholder="예: 전면 도어 패널" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-400 mb-1">품목 구분</label>
+                            <select id="item_typ" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                                <option value="P">P: 제품(Product)</option>
+                                <option value="M">M: 자재(Material)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">단위 (UOM)</label>
+                            <input type="text" id="uom" value="PCS" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <button onclick="submitItem()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded transition shadow-md">품목 등록 실행</button>
+                </div>
+            </div>
+
+            <div class="bg-gray-850 p-4 rounded-xl border border-gray-700 shadow-sm">
+                <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center">
+                    <i class="fas fa-sitemap text-purple-500 mr-2"></i> BOM 매핑 구조 정의
+                </h2>
+                <div class="space-y-3 text-xs">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-400 mb-1">모품목 (Parent)</label>
+                            <input type="text" id="bom_parent" placeholder="제품 코드" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">자품목 (Child)</label>
+                            <input type="text" id="bom_child" placeholder="자재 코드" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-400 mb-1">소요량 (Req Qty)</label>
+                            <input type="number" id="bom_qty" value="1" step="0.1" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">투입 순번</label>
+                            <input type="number" id="bom_seq" value="1" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-purple-500">
+                        </div>
+                    </div>
+                    <button onclick="submitBom()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium py-2 rounded transition shadow-md">BOM 관계 등록</button>
+                </div>
+            </div>
+
+            <div class="bg-gray-850 p-4 rounded-xl border border-gray-700 shadow-sm">
+                <h2 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3 flex items-center">
+                    <i class="fas fa-clipboard-check text-green-500 mr-2"></i> 생산 실적 입력 (수불 연동)
+                </h2>
+                <div class="space-y-3 text-xs">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-400 mb-1">작업 일자</label>
+                            <input type="text" id="prod_date" value="20260526" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">라인 코드</label>
+                            <input type="text" id="prod_line" value="LINE_01" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-green-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 mb-1">생산 대상 제품코드</label>
+                        <input type="text" id="prod_item" placeholder="제품코드 입력" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-green-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-gray-400 mb-1">생산 수량</label>
+                            <input type="number" id="prod_qty" value="10" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-1">입고 창고</label>
+                            <input type="text" id="prod_wh" value="WH01" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-green-500">
+                        </div>
+                    </div>
+                    <button onclick="submitProduction()" class="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-2 rounded transition shadow-md">실적 등록 & 자재 차감</button>
+                </div>
+            </div>
+
+        </aside>
+
+        <main class="flex-1 p-6 space-y-6 overflow-y-auto max-h-[calc(100vh-80px)] bg-gray-950">
+            
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">실시간 수불 품목 수</p>
+                        <h3 class="text-3xl font-black text-white mt-1" id="total_items_count">0</h3>
+                    </div>
+                    <div class="text-blue-500 bg-blue-950/50 p-4 rounded-full border border-blue-900 text-2xl">
+                        <i class="fas fa-boxes-stacked"></i>
+                    </div>
+                </div>
+                
+                <div class="xl:col-span-2 bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md">
+                    <h3 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 flex items-center">
+                        <i class="fas fa-chart-bar text-yellow-500 mr-2"></i> 창고별 현재고 실시간 모니터링 그래프
+                    </h3>
+                    <div class="h-28">
+                        <canvas id="stockChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-xl border border-gray-700 shadow-md overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-700 flex justify-between items-center bg-gray-750">
+                    <h3 class="text-sm font-bold text-white flex items-center">
+                        <i class="fas fa-layer-group text-blue-400 mr-2"></i> ERP 통합 현재고 마스터 현황 리스트 (ERP_STOCK_MASTER)
+                    </h3>
+                    <button onclick="fetchStockData()" class="bg-gray-700 hover:bg-gray-600 text-xs px-3 py-1.5 rounded transition flex items-center">
+                        <i class="fas fa-sync-alt mr-1"></i> 새로고침
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-gray-900 text-gray-400 border-b border-gray-700 uppercase tracking-wider font-semibold">
+                                <th class="py-3 px-6">품목 코드 (ITEM_CD)</th>
+                                <th class="py-3 px-6">보관 창고 (WH_CD)</th>
+                                <th class="py-3 px-6 text-right">현재고 수량 (CURR_QTY)</th>
+                                <th class="py-3 px-6 text-center">상태 관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stock_table_body" class="divide-y divide-gray-700">
+                            <tr>
+                                <td colspan="4" class="py-8 text-center text-gray-500">데이터를 불러오는 중이거나 현재고가 존재하지 않습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <footer class="bg-gray-800 text-center py-2.5 text-xs text-gray-500 border-t border-gray-700">
+        © 2026 Next Generation ERP v3 Backend Engine with FastAPI & SQLAlchemy. All Rights Reserved.
+    </footer>
+
+    <script>
+        let myChart = null;
+
+        // 페이지 로드 시 실시간으로 데이터 가져오기 실행
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchStockData();
+        });
+
+        // 1. FastAPI 백엔드 엔드포인트로부터 실시간 재고 정보를 조회하여 바인딩
+        async function fetchStockData() {
+            try {
+                const response = await fetch('/api/v1/stock');
+                const data = await response.json();
+                
+                const tableBody = document.getElementById('stock_table_body');
+                document.getElementById('total_items_count').innerText = data.length;
+
+                if (!data || data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-gray-500">조회된 마스터 재고가 없습니다. 품목 등록 후 실적을 입력해 주세요.</td></tr>`;
+                    initChart([], []);
+                    return;
+                }
+
+                // 테이블 본문 초기화 및 바인딩
+                tableBody.innerHTML = '';
+                const labels = [];
+                const quantities = [];
+
+                data.forEach(stock => {
+                    labels.push(`${stock.item_cd} (${stock.wh_cd})`);
+                    quantities.push(stock.curr_qty);
+
+                    // 마이너스 재고인 경우 경고 색상 바인딩 (자재 쇼티지 방지 가시화)
+                    const qtyColor = stock.curr_qty < 0 ? 'text-red-400 font-bold' : 'text-green-400 font-semibold';
+                    const badge = stock.curr_qty < 0 ? '<span class="bg-red-950 text-red-400 border border-red-800 text-[10px] px-2 py-0.5 rounded">Shortage</span>' : '<span class="bg-green-950 text-green-400 border border-green-800 text-[10px] px-2 py-0.5 rounded">Stable</span>';
+
+                    tableBody.innerHTML += `
+                        <tr class="hover:bg-gray-700/50 transition">
+                            <td class="py-3 px-6 font-mono text-blue-300 font-medium">${stock.item_cd}</td>
+                            <td class="py-3 px-6 font-mono text-gray-300">${stock.wh_cd}</td>
+                            <td class="py-3 px-6 text-right font-mono ${qtyColor}">${stock.curr_qty.toLocaleString()}</td>
+                            <td class="py-3 px-6 text-center">${badge}</td>
+                        </tr>
+                    `;
+                });
+
+                // Chart.js 시각화 갱신
+                initChart(labels, quantities);
+
+            } catch (error) {
+                console.error("데이터 수신 오류:", error);
+            }
+        }
+
+        // 2. 신규 품목 등록 API 전송 처리
+        async function submitItem() {
+            const payload = {
+                item_cd: document.getElementById('item_cd').value,
+                item_nm: document.getElementById('item_nm').value,
+                item_typ: document.getElementById('item_typ').value,
+                spec: "",
+                uom: document.getElementById('uom').value
+            };
+
+            if(!payload.item_cd || !payload.item_nm) return alert('품목코드와 품목명을 입력해 주세요.');
+
+            const res = await fetch('/api/v1/items', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if(res.ok) {
+                alert(`품목 등록 완료: ${result.item_cd}`);
+                fetchStockData();
+            } else {
+                alert(`오류: ${result.detail}`);
+            }
+        }
+
+        // 3. BOM 구조 정보 설정 API 전송 처리
+        async function submitBom() {
+            const payload = {
+                parent_cd: document.getElementById('bom_parent').value,
+                child_cd: document.getElementById('bom_child').value,
+                req_qty: parseFloat(document.getElementById('bom_qty').value),
+                seq: parseInt(document.getElementById('bom_seq').value)
+            };
+
+            if(!payload.parent_cd || !payload.child_cd) return alert('모품목과 자품목 코드를 입력하세요.');
+
+            const res = await fetch('/api/v1/bom', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if(res.ok) {
+                alert(`BOM 매핑 등록 완료!`);
+            } else {
+                alert(`오류: ${result.detail}`);
+            }
+        }
+
+        // 4. 생산실적 입력 및 수불 자동 백플러시 동시 유효성 처리
+        async function submitProduction() {
+            const payload = {
+                work_date: document.getElementById('prod_date').value,
+                line_cd: document.getElementById('prod_line').value,
+                item_cd: document.getElementById('prod_item').value,
+                prod_qty: parseFloat(document.getElementById('prod_qty').value),
+                wh_cd: document.getElementById('prod_wh').value
+            };
+
+            if(!payload.item_cd) return alert('생산 대상 제품코드를 입력하세요.');
+
+            const res = await fetch('/api/v1/production', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if(res.ok) {
+                alert(`[실적 처리 성공]\n생산제품 입고 및 하위 BOM 자재 자동 차감이 완료되었습니다.`);
+                fetchStockData();
+            } else {
+                alert(`오류: ${result.detail}`);
+            }
+        }
+
+        // 5. Chart.js 바형 그래프 렌더링 함수
+        function initChart(labels, data) {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            if (myChart) { myChart.destroy(); }
+            
+            myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '현재고 수량',
+                        data: data,
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#374151' }, ticks: { color: '#9CA3AF', font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { color: '#9CA3AF', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

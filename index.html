@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NERP - Enterprise Core Suite v3</title>
+    <!-- Tailwind CSS / FontAwesome 폰트 라이브러리 연동 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght=300;400;500;600;700;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        
+        /* 세련된 애니메이션 효과 정의 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center transition-all duration-300">
+
+    <!-- 글로벌 Toast 알림 레이아웃 (우측 상단 팝업) -->
+    <div id="toast_container" class="fixed top-5 right-5 z-50 space-y-3 pointer-events-none"></div>
+
+    <!-- [로그인 포털 게이트웨이 화면] -->
+    <div id="login_screen" class="w-full max-w-5xl bg-slate-850 rounded-3xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col md:flex-row m-4 animate-fade-in">
+        
+        <!-- 왼쪽: 조직도 기반 디렉토리 트리 구조 -->
+        <div class="flex-1 bg-slate-800/60 p-8 flex flex-col justify-between">
+            <div>
+                <span class="text-xs font-bold text-indigo-400 bg-indigo-950/50 border border-indigo-900 px-3 py-1 rounded-full">
+                    STEP 1. 소속 조직도 확인
+                </span>
+                <h2 class="text-2xl font-extrabold text-white mt-4">NVH KOREA 조직도 구조</h2>
+                <p class="text-xs text-slate-400 mt-1">소속되어 있는 본사 혹은 해외 계열사 트리를 조회하고 확인하십시오.</p>
+                
+                <!-- 인터랙티브 트리 뷰 -->
+                <div id="dept_tree" class="mt-6 space-y-3 bg-slate-900/80 p-5 rounded-2xl border border-slate-800 max-h-80 overflow-y-auto">
+                    <!-- API 또는 Fallback 가상 조직도 영역 -->
+                </div>
+            </div>
+            
+            <div class="mt-6 p-4 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                <span>데이터 원본 저장소:</span>
+                <span class="font-bold text-indigo-400"><i class="fa-solid fa-database mr-1"></i> MS-SQL [NERP]</span>
+            </div>
+        </div>
+
+        <!-- 오른쪽: 계정 로그인 정보 입력 창 -->
+        <div class="w-full md:w-96 p-8 flex flex-col justify-between border-t md:border-t-0 md:border-l border-slate-800 bg-slate-850">
+            <div>
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-900/30">
+                        <i class="fa-solid fa-shield-halved text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white tracking-tight">NERP 통합 계정 포털</h1>
+                        <p class="text-[10px] text-slate-400">Enterprise Security Suite v3</p>
+                    </div>
+                </div>
+
+                <!-- 기존 단순 div 나열에서 HTML 표준 <form> 요소로 감싸서 엔터키 기본 이벤트를 자동 매핑 -->
+                <form onsubmit="event.preventDefault(); handleLoginSubmit();" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">사용자 ID (LOGIN_ID)</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-user absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="username" placeholder="등록된 아이디를 입력하세요" required
+                                class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder-slate-500 transition-colors focus:ring-2 focus:ring-indigo-950">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">비밀번호 (PASSWORD)</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-xs"></i>
+                            <input type="password" id="password" placeholder="••••••••" required
+                                class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder-slate-500 transition-colors focus:ring-2 focus:ring-indigo-950">
+                        </div>
+                    </div>
+
+                    <!-- type="submit" 설정을 통해 키보드 엔터(Enter)를 누르면 handleLoginSubmit()가 자동으로 트리거됩니다 -->
+                    <button type="submit" class="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-900/30 text-xs flex justify-center items-center space-x-2">
+                        <span>권한 통합 로그인</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                </form>
+            </div>
+
+            <!-- 하단 도구 안내 피드백 및 빠른 테스트용 데모 정보 표시 -->
+            <div class="mt-8 pt-4 border-t border-slate-800 text-[11px] text-slate-500 space-y-2">
+                <p class="flex items-start"><i class="fa-solid fa-circle-info text-indigo-500 mr-2 mt-0.5"></i> <span>아이디와 패스워드를 기입하고 키보드 <strong>Enter</strong> 키를 누르셔도 곧바로 로그인이 시작됩니다.</span></p>
+                <div class="p-2.5 bg-slate-900/80 rounded-lg border border-slate-800 text-[10px] space-y-1">
+                    <span class="font-bold text-slate-400 block"><i class="fa-solid fa-vial-virus mr-1"></i> 오프라인/디버깅 테스트 권장 계정:</span>
+                    <p class="text-slate-500">ID: <span class="text-indigo-400 font-mono select-all">admin</span> / PW: <span class="text-indigo-400 font-mono select-all">admin</span> (혹은 엑셀 등록 사번)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- [메인 대시보드 및 기준정보 파일 업로드 포털] (로그인 성공 시 출력) -->
+    <div id="dashboard_screen" class="hidden w-full min-h-screen flex flex-col bg-slate-950 animate-fade-in">
+        
+        <!-- 대시보드 상단 마스터 헤더 바 -->
+        <header class="bg-slate-900 border-b border-slate-800 px-8 py-5 flex justify-between items-center shadow-lg">
+            <div class="flex items-center space-x-3.5">
+                <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-md">
+                    <i class="fa-solid fa-cubes text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-md font-extrabold text-white tracking-tight">NERP <span class="text-xs bg-indigo-950 text-indigo-400 border border-indigo-900 px-2 py-0.5 rounded ml-2">Console v3</span></h1>
+                    <p class="text-xs text-slate-400 mt-0.5">통합 기준 마스터 정보 제어국 및 데이터 클렌징 센터</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <div class="bg-slate-850 border border-slate-800 px-4 py-2 rounded-xl flex items-center space-x-3 text-xs">
+                    <span class="text-slate-400 font-medium"><i class="fa-solid fa-circle-user text-indigo-400 mr-1.5"></i> <span id="user_display_name">-</span></span>
+                    <span class="text-slate-700">|</span>
+                    <span class="text-slate-400 font-medium"><i class="fa-solid fa-circle-nodes text-purple-400 mr-1.5"></i> <span id="user_display_dept">-</span></span>
+                </div>
+                <button onclick="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition border border-slate-700">
+                    로그아웃
+                </button>
+            </div>
+        </header>
+
+        <!-- 메인 콘텐츠 영역 -->
+        <main class="flex-1 p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- 왼쪽: 업로드 제어 센터 (파일 업로드 카드) -->
+            <div class="bg-slate-900 rounded-3xl border border-slate-800 p-6 space-y-6 shadow-xl">
+                <div>
+                    <span class="text-[10px] font-bold text-indigo-400 bg-indigo-950/50 border border-indigo-900 px-2 py-1 rounded-md">ADMIN PORTAL</span>
+                    <h2 class="text-xl font-extrabold text-white mt-3">신규 기준정보 동기화</h2>
+                    <p class="text-xs text-slate-400 mt-1">새로운 기준정보 사원 마스터 파일을 NERP 데이터베이스 테이블에 안전하게 적재합니다.</p>
+                </div>
+
+                <!-- 드래그 앤 드롭 지원 파일 파일 선택기 -->
+                <div class="border-2 border-dashed border-slate-800 hover:border-indigo-500 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-950/50 relative" id="drop_zone">
+                    <input type="file" id="excel_file_input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+                    <div class="space-y-3 pointer-events-none">
+                        <div class="text-3xl text-slate-500"><i class="fa-solid fa-cloud-arrow-up animate-bounce"></i></div>
+                        <div class="text-xs font-semibold text-slate-300" id="file_label">마우스로 파일을 끌어다 놓거나 클릭하십시오.</div>
+                        <div class="text-[10px] text-slate-500">지원 형식: .xlsx, .xls, .csv</div>
+                    </div>
+                </div>
+
+                <button onclick="uploadExcelToServer()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition text-xs flex items-center justify-center shadow-lg shadow-indigo-900/30">
+                    <i class="fa-solid fa-server mr-2"></i> 파일 적재 및 트랜잭션 실행
+                </button>
+            </div>
+
+            <!-- 오른쪽: 실시간 결과 상세 리포팅 로그 카드 -->
+            <div class="lg:col-span-2 bg-slate-900 rounded-3xl border border-slate-800 p-6 flex flex-col justify-between shadow-xl">
+                <div>
+                    <h2 class="text-lg font-extrabold text-white flex items-center">
+                        <i class="fa-solid fa-receipt text-indigo-400 mr-2"></i> 실시간 파일 처리 로그 리포트
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">업로드 처리 결과와 MSSQL 데이터 정제 내역이 여기에 정밀하게 추적됩니다.</p>
+                    
+                    <div class="mt-6 space-y-4">
+                        <!-- 적재 완료 요약 박스 -->
+                        <div class="bg-slate-950 p-5 rounded-2xl border border-slate-850 space-y-3">
+                            <h3 class="text-xs font-bold text-slate-300 flex items-center">
+                                <span class="w-2 h-2 bg-emerald-400 rounded-full mr-2"></span> 마스터 테이블 갱신 피드백
+                            </h3>
+                            <div class="text-2xl font-black text-emerald-400" id="report_summary_count">0 건 처리 완료</div>
+                            <p class="text-xs text-slate-400" id="report_summary_msg">파일을 준비한 후 업로드 버튼을 실행해 주십시오.</p>
+                        </div>
+
+                        <!-- 세부 그룹핑 소계 결과 창 -->
+                        <div class="bg-slate-950 p-5 rounded-2xl border border-slate-850 space-y-2">
+                            <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">계열사별 상세 데이터 가시화</h3>
+                            <div id="report_details" class="text-xs space-y-1.5 text-slate-300 max-h-52 overflow-y-auto">
+                                <span class="text-slate-600 text-[11px] italic">현재 이력 로그가 비어 있습니다.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 푸터 마크 -->
+                <div class="pt-6 border-t border-slate-850 text-slate-600 text-[10px] text-center">
+                    System Control Unit • NERP Core API with High-Speed SQLAlchemy Bulk Engine
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+
+    <!-- [부동 도구]: 관리자 다이렉트 전환 툴 -->
+    <div class="fixed bottom-6 right-6 flex items-center space-x-3">
+        <button onclick="toggleSetupScreenDirectly()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-3.5 rounded-full shadow-2xl transition-all hover:scale-105" title="설정(업로드) 센터 바로가기">
+            <i class="fa-solid fa-arrow-up-from-bracket text-sm"></i>
+        </button>
+    </div>
+
+
+    <!-- 어플리케이션 인터랙션 및 API 스크립트 -->
+    <script>
+        let selectedFile = null;
+
+        // API 경로 자동 보정 로직 (Iframe 및 Sandbox 환경 완벽 대응)
+        const getApiUrl = (endpoint) => {
+            const host = window.location.hostname;
+            const origin = window.location.origin || (window.location.protocol + '//' + window.location.host);
+            
+            // 특수한 Sandbox 및 유저 컨텐츠 호스팅 도메인일 경우 우회 로컬 백엔드로 설정
+            if (!host || host === '' || host === 'null' || origin.startsWith('blob:') || origin.includes('goog') || origin.includes('usercontent')) {
+                return 'http://127.0.0.1:8000' + endpoint;
+            }
+            return origin + endpoint;
+        };
+
+        window.onload = () => {
+            getDeptTreeList();
+        };
+
+        // 1. Toast 알림 팝업 전송 엔진
+        function triggerToast(title, msg, type = 'success') {
+            const container = document.getElementById('toast_container');
+            const toast = document.createElement('div');
+            
+            const borderColors = type === 'success' ? 'border-emerald-500' : 'border-rose-500';
+            const textColors = type === 'success' ? 'text-emerald-400' : 'text-rose-400';
+            const icon = type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-triangle-exclamation';
+
+            toast.className = `w-80 bg-slate-900 border-l-4 ${borderColors} p-4 rounded-xl shadow-2xl flex items-start space-x-3 pointer-events-auto transition duration-300 transform translate-x-10 opacity-0`;
+            toast.innerHTML = `
+                <div class="${textColors} text-lg"><i class="${icon}"></i></div>
+                <div class="flex-1 text-xs">
+                    <p class="font-bold text-white">${title}</p>
+                    <p class="text-slate-400 mt-0.5">${msg}</p>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-x-10', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-10', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 4000);
+        }
+
+        // 2. 비즈니스 조직 트리 조회 바인딩
+        async function getDeptTreeList() {
+            try {
+                const targetUrl = getApiUrl('/api/v1/auth/dept-tree');
+                const res = await fetch(targetUrl);
+                if (!res.ok) throw new Error("Fetch failed");
+                const data = await res.json();
+                renderDeptTree(data);
+            } catch (err) {
+                console.warn("API 서버 오프라인 또는 연결 장애, 로컬 예비 조직도 자동 구동:", err);
+                // 자바스크립트 표준 boolean 형식인 소문자 true 로 완벽 동기화
+                const fallbackData = [{
+                    "id": "CORP_ROOT", "name": "엔브이에이치코리아 법인 연합 (대기모드)", "icon": "fa-building-columns", "open": true,
+                    "children": [
+                        { "id": "1000", "name": "엔브이에이치코리아 (본사)", "icon": "fa-building", "depts": ["구매팀", "연구소", "IT지원팀", "생산관리팀"] },
+                        { "id": "6000", "name": "엔브이에이치플로어시스템", "icon": "fa-industry", "depts": ["개발파트", "재무팀", "생산기술팀"] },
+                        { "id": "6100", "name": "엔브이에이치오버헤드시스템", "icon": "fa-industry", "depts": ["개발/신차품질팀", "생산파트"] },
+                        { "id": "7300", "name": "NVHUSA (해외법인)", "icon": "fa-earth-americas", "depts": ["인사총무팀", "생산생관팀"] }
+                    ]
+                }];
+                renderDeptTree(fallbackData);
+                triggerToast("💡 시스템 안내", "백엔드 서버 미작동 중으로 예비용 로컬 조직도 모드가 실행되었습니다.", "success");
+            }
+        }
+
+        // 조직도 트리 화면 UI 그리기
+        function renderDeptTree(data) {
+            const container = document.getElementById('dept_tree');
+            container.innerHTML = '';
+
+            data.forEach(root => {
+                let html = `
+                    <div class="space-y-1.5">
+                        <div class="text-xs font-bold text-white flex items-center pb-2 border-b border-slate-800">
+                            <i class="fa-solid ${root.icon} text-indigo-400 mr-2"></i> ${root.name}
+                        </div>
+                        <div class="pl-4 pt-1 space-y-2">
+                `;
+                
+                root.children.forEach(child => {
+                    let deptBadges = child.depts ? child.depts.map(d => `<span class="bg-slate-800 text-slate-400 border border-slate-750 px-1.5 py-0.5 rounded text-[10px]">${d}</span>`).join(' ') : '대기';
+                    html += `
+                        <div class="p-3 bg-slate-950/40 rounded-xl border border-slate-850 flex flex-col space-y-1.5">
+                            <div class="flex items-center text-xs font-semibold text-slate-300">
+                                <i class="fa-solid ${child.icon} text-slate-500 mr-2 text-[11px]"></i> ${child.name} (ID: ${child.id})
+                            </div>
+                            <div class="flex flex-wrap gap-1">${deptBadges}</div>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+                container.innerHTML += html;
+            });
+        }
+
+        // 3. 통합 계정 사원 인증 전송 API
+        async function handleLoginSubmit() {
+            const login_id = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!login_id || !password) {
+                triggerToast("⚠️ 필수 입력 누락", "사원 ID와 패스워드를 공란 없이 모두 입력해 주십시오.", "error");
+                return;
+            }
+
+            // 💡 [테스트/디버깅 우회 모드] 백엔드 서버가 켜져 있지 않아도 admin/admin 입력 시 화면 진입이 가능하도록 제어
+            if (login_id.toLowerCase() === 'admin' && password === 'admin') {
+                triggerToast("🎉 데모 로그인 성공", "서버가 로컬 가상 검증 모드 세션으로 로그인 승인되었습니다.", "success");
+                enterDashboard({
+                    display_name: "IT지원팀 관리자 (Admin)",
+                    company: "엔브이에이치코리아",
+                    department: "ICT 기획팀",
+                    role: "SYS_ADMIN"
+                });
+                return;
+            }
+
+            try {
+                const targetUrl = getApiUrl('/api/v1/auth/login');
+                const res = await fetch(targetUrl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username: login_id, password: password })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    triggerToast("❌ 인증 오류", errData.detail || "등록되지 않은 아이디이거나 패스워드 에러입니다.", "error");
+                    return;
+                }
+
+                const result = await res.json();
+                triggerToast("🔑 로그인 성공", result.message, "success");
+                enterDashboard(result.session_user);
+
+            } catch (err) {
+                console.error("로그인 서버 통신 실패:", err);
+                triggerToast("🔥 오프라인 알림", "로컬 NERP 백엔드 서비스가 종료된 상태입니다. 데모 계정(admin/admin)으로 로그인하십시오.", "error");
+            }
+        }
+
+        // 대시보드 화면 전환 처리기
+        function enterDashboard(userSession) {
+            document.getElementById('login_screen').classList.add('hidden');
+            document.getElementById('dashboard_screen').classList.remove('hidden');
+
+            document.getElementById('user_display_name').innerText = userSession.display_name;
+            document.getElementById('user_display_dept').innerText = `${userSession.company} / ${userSession.department}`;
+        }
+
+        // 4. 드롭존 파일 선택 처리 핸들러
+        function handleFileSelect(e) {
+            const files = e.target.files || e.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                document.getElementById('file_label').innerText = `${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`;
+                triggerToast("📂 파일 선택 완료", "파일을 업로드하고 MSSQL 적재를 수행하려면 실행 버튼을 클릭하십시오.", "success");
+            }
+        }
+
+        // 5. 서버에 기준정보 엑셀 업로드 및 MSSQL 데이터 적재 처리
+        async function uploadExcelToServer() {
+            if (!selectedFile) {
+                triggerToast("⚠️ 파일 지정 필요", "업로드하려는 엑셀(.xlsx) 또는 .csv 파일을 지정해 주십시오.", "error");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            try {
+                document.getElementById('report_summary_count').innerText = "가공 및 트랜잭션 적재 진행 중...";
+                const targetUrl = getApiUrl('/api/v1/setup/upload-users-new');
+                
+                const res = await fetch(targetUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await res.json();
+
+                if (!res.ok) {
+                    triggerToast("❌ 트랜잭션 롤백", result.detail || "데이터 분석 중 에러가 발생하여 이전을 취소합니다.", "error");
+                    document.getElementById('report_summary_count').innerText = "0 건 처리 실패";
+                    document.getElementById('report_summary_msg').innerText = "데이터 정합성 유지를 위해 전체 롤백 처리되었습니다.";
+                    return;
+                }
+
+                triggerToast("🎉 마스터 적재 완료", result.total_count, "success");
+
+                // 실시간 리포트 로그 시각 갱신
+                document.getElementById('report_summary_count').innerText = result.total_count;
+                document.getElementById('report_summary_msg').innerText = result.message;
+
+                const detailsContainer = document.getElementById('report_details');
+                detailsContainer.innerHTML = '';
+                result.details.forEach(item => {
+                    detailsContainer.innerHTML += `<p class="flex items-center text-[11px]"><span class="w-1.5 h-1.5 bg-indigo-400 rounded-full mr-2"></span>${item}</p>`;
+                });
+
+            } catch (err) {
+                console.error("업로드 통신 에러:", err);
+                triggerToast("🔥 적재 연동 실패", "로컬 NERP API 서버가 활성화되어 있지 않습니다.", "error");
+            }
+        }
+
+        // 로그아웃 세션 리셋
+        function handleLogout() {
+            window.location.reload();
+        }
+
+        // 다이렉트 관리자 전환 모드
+        function toggleSetupScreenDirectly() {
+            triggerToast("🔧 관리자 즉시 전환", "권한 체크 우회 설정 관리자 모듈로 이동합니다.", "success");
+            enterDashboard({
+                display_name: "IT지원팀 (Admin)",
+                company: "엔브이에이치코리아",
+                department: "기준정보 설정 센터",
+                role: "SYS_ADMIN"
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NERP - Enterprise Core Suite v3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center transition-all duration-300">
+
+    <div id="toast_container" class="fixed top-5 right-5 z-50 space-y-3 pointer-events-none"></div>
+
+    <div id="login_screen" class="w-full max-w-5xl bg-slate-850 rounded-3xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col md:flex-row m-4 animate-fade-in">
+        <div class="flex-1 bg-slate-800/60 p-8 flex flex-col justify-between">
+            <div>
+                <span class="text-xs font-bold text-indigo-400 bg-indigo-950/50 border border-indigo-900 px-3 py-1 rounded-full">STEP 1. 소속 조직도 확인</span>
+                <h2 class="text-2xl font-extrabold text-white mt-4">NVH KOREA 조직도 구조</h2>
+                <div id="dept_tree" class="mt-6 space-y-3 bg-slate-900/80 p-5 rounded-2xl border border-slate-800 max-h-80 overflow-y-auto"></div>
+            </div>
+            <div class="mt-6 p-4 bg-slate-900 rounded-xl border border-slate-800 flex justify-between items-center text-xs text-slate-400">
+                <span>데이터 원본 저장소:</span>
+                <span class="font-bold text-indigo-400"><i class="fa-solid fa-database mr-1"></i> MS-SQL [NERP]</span>
+            </div>
+        </div>
+
+        <div class="w-full md:w-96 p-8 flex flex-col justify-between border-t md:border-t-0 md:border-l border-slate-800 bg-slate-850">
+            <div>
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="bg-indigo-600 p-2.5 rounded-xl text-white shadow-lg"><i class="fa-solid fa-shield-halved text-lg"></i></div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white tracking-tight">NERP 통합 계정 포털</h1>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <input type="text" id="username" placeholder="아이디" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white">
+                    <input type="password" id="password" placeholder="비밀번호" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white">
+                    <button onclick="handleLoginSubmit()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition">로그인</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard_screen" class="hidden w-full min-h-screen flex flex-col bg-slate-950">
+        <header class="bg-slate-900 border-b border-slate-800 px-8 py-5 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-white">NERP Console v3</h1>
+            <button onclick="window.location.reload()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs">로그아웃</button>
+        </header>
+        <main class="p-8">
+            <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800">
+                <h2 class="text-lg font-bold mb-4">신규 기준정보 동기화</h2>
+                <input type="file" id="excel_file_input" class="w-full p-4 border border-slate-700 rounded-xl bg-slate-950">
+                <button onclick="uploadExcelToServer()" class="mt-4 w-full bg-indigo-600 text-white py-3 rounded-xl">파일 적재 실행</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // API 경로 자동 보정 로직
+        const getApiUrl = (endpoint) => {
+            const host = window.location.hostname;
+            if (!host || host === '' || host === 'null') {
+                return 'http://127.0.0.1:8000' + endpoint;
+            }
+            return window.location.origin + endpoint;
+        };
+
+        async function getDeptTreeList() {
+            try {
+                const res = await fetch(getApiUrl('/api/v1/auth/dept-tree'));
+                if (!res.ok) throw new Error("Fetch failed");
+                const data = await res.json();
+                renderDeptTree(data);
+            } catch (err) {
+                console.warn("API 서버 연결 실패, 가상 데이터 로드:", err);
+                const fallbackData = [{
+                    "id": "CORP_ROOT", "name": "NVH KOREA (운영 모드)", "icon": "fa-building", "open": true,
+                    "children": [
+                        { "id": "1000", "name": "본사", "icon": "fa-building", "depts": ["구매팀", "연구소"] },
+                        { "id": "7300", "name": "NVHUSA", "icon": "fa-earth-americas", "depts": ["인사팀"] }
+                    ]
+                }];
+                renderDeptTree(fallbackData);
+            }
+        }
+
+        function renderDeptTree(data) {
+            const container = document.getElementById('dept_tree');
+            container.innerHTML = data.map(root => `
+                <div class="text-white font-bold mb-2"><i class="fa-solid ${root.icon} mr-2"></i>${root.name}</div>
+                ${root.children.map(c => `<div class="ml-4 text-xs text-slate-400">· ${c.name}</div>`).join('')}
+            `).join('');
+        }
+
+        window.onload = getDeptTreeList;
+
+        async function handleLoginSubmit() {
+            // 로그인 로직
+            triggerToast("알림", "로그인 시도 중...");
+        }
+
+        function triggerToast(title, msg) {
+            const container = document.getElementById('toast_container');
+            const el = document.createElement('div');
+            el.className = "bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg text-xs";
+            el.innerText = msg;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+    </script>
+</body>
+</html>
